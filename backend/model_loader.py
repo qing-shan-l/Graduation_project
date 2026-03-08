@@ -6,10 +6,19 @@ import logging
 import os
 import io
 import sys
-from pathlib import Path
+import pickle
+from pathlib import Path, PosixPath, WindowsPath
 from config import MODEL_PATH, MODEL_CONFIDENCE_THRESHOLD, SUPPORTED_CLASSES
 
 logger = logging.getLogger(__name__)
+
+
+class PathFixer(pickle.Unpickler):
+    """自定义Unpickler，处理WindowsPath到PosixPath的转换"""
+    def find_class(self, module, name):
+        if module == 'pathlib' and name == 'WindowsPath':
+            return PosixPath
+        return super().find_class(module, name)
 
 
 class YOLOv5Detector:
@@ -20,9 +29,8 @@ class YOLOv5Detector:
         self.load_model()
 
     def load_model(self):
-        """加载YOLOv5模型"""
+        """加载YOLOv5模型，处理跨平台路径兼容性"""
         try:
-            # 检查模型文件
             if not os.path.exists(MODEL_PATH):
                 logger.error(f"模型文件不存在: {MODEL_PATH}")
                 raise FileNotFoundError(f"模型文件不存在: {MODEL_PATH}")
@@ -30,28 +38,12 @@ class YOLOv5Detector:
             logger.info(f"正在加载模型从: {MODEL_PATH}")
             logger.info(f"使用设备: {self.device}")
 
-            # 获取项目根目录
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            project_root = os.path.dirname(current_dir)
-            
-            # 设置YOLOv5路径
-            yolov5_path = os.path.join(project_root, 'yolov5')
-            logger.info(f"YOLOv5路径: {yolov5_path}")
-            
-            # 将YOLOv5路径添加到sys.path
-            if os.path.exists(yolov5_path):
-                if yolov5_path not in sys.path:
-                    sys.path.insert(0, yolov5_path)
-                    logger.info(f"已添加YOLOv5路径到sys.path")
-            else:
-                logger.error(f"YOLOv5目录不存在: {yolov5_path}")
-                raise FileNotFoundError(f"YOLOv5目录不存在")
-            
             # 方法1: 使用torch.hub.load（最可靠）
-            logger.info("尝试使用torch.hub.load加载模型...")
             try:
-                # 先设置环境变量，避免下载
-                os.environ['TORCH_HUB'] = yolov5_path
+                logger.info("尝试使用torch.hub.load加载模型...")
+                
+                # 设置环境变量
+                os.environ['YOLO_VERBOSE'] = 'False'
                 
                 self.model = torch.hub.load(
                     'ultralytics/yolov5:master',
@@ -59,8 +51,9 @@ class YOLOv5Detector:
                     path=MODEL_PATH,
                     force_reload=False,
                     trust_repo=True,
-                    skip_validation=True  # 跳过验证
+                    skip_validation=True
                 )
+                
                 self.model.conf = MODEL_CONFIDENCE_THRESHOLD
                 self.model.iou = 0.45
                 self.model.to(self.device)
@@ -70,68 +63,53 @@ class YOLOv5Detector:
             except Exception as e:
                 logger.error(f"torch.hub.load失败: {e}")
                 
-                # 方法2: 尝试直接导入本地模块
-                logger.info("尝试使用本地模块加载...")
-                try:
-                    # 导入YOLOv5模块
-                    import models
-                    from models.common import DetectMultiBackend, AutoShape
-                    from utils.general import check_img_size, non_max_suppression, scale_boxes
-                    from utils.torch_utils import select_device
-                    
-                    # 加载模型
-                    self.model = DetectMultiBackend(
-                        weights=MODEL_PATH,
-                        device=select_device(self.device),
-                        dnn=False,
-                        data=None,
-                        fp16=False
-                    )
-                    
-                    # 设置参数
-                    self.model.conf = MODEL_CONFIDENCE_THRESHOLD
-                    self.model.iou = 0.45
-                    
-                    # 包装为AutoShape
-                    self.model = AutoShape(self.model)
-                    
-                    logger.info("本地模块加载成功！")
-                    
-                except ImportError as e2:
-                    logger.error(f"本地模块加载失败: {e2}")
-                    
-                    # 方法3: 最后的备选方案
-                    logger.info("尝试使用备选加载方式...")
-                    try:
-                        # 直接添加子目录
-                        models_path = os.path.join(yolov5_path, 'models')
-                        utils_path = os.path.join(yolov5_path, 'utils')
+                # 方法2: 使用自定义unpickler处理路径兼容性
+                logger.info("尝试使用自定义unpickler加载模型...")
+                
+                # 使用自定义unpickler加载
+                with open(MODEL_PATH, 'rb') as f:
+                    checkpoint = PathFixer(f).load()
+                
+                # 设置YOLOv5路径
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                project_root = os.path.dirname(current_dir)
+                yolov5_path = os.path.join(project_root, 'yolov5')
+                
+                if yolov5_path not in sys.path:
+                    sys.path.insert(0, yolov5_path)
+                
+                # 导入YOLOv5模块
+                from models.common import DetectMultiBackend, AutoShape
+                from utils.torch_utils import select_device
+                
+                # 创建模型包装器
+                class ModelWrapper:
+                    def __init__(self, checkpoint, device, conf):
+                        self.model = checkpoint
+                        self.conf = conf
+                        self.iou = 0.45
+                        self.device = device
+                        self.names = SUPPORTED_CLASSES
                         
-                        if models_path not in sys.path:
-                            sys.path.insert(0, models_path)
-                        if utils_path not in sys.path:
-                            sys.path.insert(0, utils_path)
+                    def __call__(self, img, size=640):
+                        # 简单的推理包装
+                        import torchvision.transforms as transforms
+                        transform = transforms.Compose([
+                            transforms.Resize((size, size)),
+                            transforms.ToTensor(),
+                        ])
                         
-                        from common import DetectMultiBackend, AutoShape
-                        from general import non_max_suppression, scale_boxes
+                        img_tensor = transform(img).unsqueeze(0)
                         
-                        self.model = DetectMultiBackend(
-                            weights=MODEL_PATH,
-                            device=self.device,
-                            dnn=False,
-                            data=None,
-                            fp16=False
-                        )
+                        with torch.no_grad():
+                            if hasattr(self.model, 'eval'):
+                                self.model.eval()
+                            results = self.model(img_tensor)
                         
-                        self.model.conf = MODEL_CONFIDENCE_THRESHOLD
-                        self.model.iou = 0.45
-                        self.model = AutoShape(self.model)
-                        
-                        logger.info("备选加载成功！")
-                        
-                    except Exception as e3:
-                        logger.error(f"所有加载方法都失败: {e3}")
-                        raise e3
+                        return results
+                
+                self.model = ModelWrapper(checkpoint, self.device, MODEL_CONFIDENCE_THRESHOLD)
+                logger.info("自定义unpickler加载成功！")
 
             # 过滤类别
             self.filter_classes()
