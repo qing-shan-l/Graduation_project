@@ -4,7 +4,7 @@ import os
 # 添加当前目录到系统路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Depends
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from typing import Optional, List
@@ -17,7 +17,7 @@ from datetime import datetime
 from model_loader import get_detector
 from nutrition_advisor import get_advisor
 from config import HOST, PORT, SUPPORTED_CLASSES, CLASS_CHINESE_NAMES
-from helpers import compress_image, validate_image, generate_filename, image_to_base64
+from helpers import compress_image, validate_image
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -56,7 +56,7 @@ async def startup_event():
         logger.info("服务启动成功！")
     except Exception as e:
         logger.error(f"服务启动失败: {e}")
-        # Render会捕获异常并重启服务
+        # Render会捕获这个异常并重启服务
         raise e
 
 
@@ -124,7 +124,7 @@ async def predict(
         detections = detector.detect(contents)
 
         # 记录检测结果
-        logger.info(f"检测到 {len(detections)} 个食物: {detections}")
+        logger.info(f"检测到 {len(detections)} 个食物")
 
         response = {
             "success": True,
@@ -132,11 +132,6 @@ async def predict(
             "detections": detections,
             "count": len(detections)
         }
-
-        # 如果需要返回标注图片
-        if return_image and detections:
-            # TODO: 添加标注功能
-            pass
 
         return JSONResponse(content=response)
 
@@ -316,30 +311,6 @@ async def get_nutrition_advice(
     return advice
 
 
-# 获取服务器IP地址接口
-@app.get("/server-info")
-async def get_server_info():
-    """获取服务器信息，包括IP地址"""
-    import socket
-    hostname = socket.gethostname()
-    local_ip = socket.gethostbyname(hostname)
-
-    # 尝试获取更合适的本地IP
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-    except:
-        pass
-
-    return {
-        "hostname": hostname,
-        "ip": local_ip,
-        "port": PORT,
-        "url": f"http://{local_ip}:{PORT}"
-    }
-
-
-# 注意：Render会使用uvicorn直接运行，不需要__main__块
-# 这个文件将由uvicorn导入并运行
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host=HOST, port=PORT)
