@@ -1,24 +1,19 @@
-# 核心依赖 - 仅用于推理
+# 核心依赖
 fastapi==0.104.1
 uvicorn==0.24.0
 python-multipart==0.0.6
 pydantic==2.5.0
 
 # 图像处理
-pillow==10.1.0
+Pillow==9.5.0
 opencv-python-headless==4.8.1.78
 numpy==1.24.3
 
-# 深度学习
-torch==2.1.0
-torchvision==0.16.0
-
 # YOLOv5依赖
-PyYAML==6.0.1
-tqdm==4.66.1
-matplotlib==3.7.2
+torch==2.0.1
+torchvision==0.15.2
+PyYAML==6.0
+tqdm==4.65.0
+matplotlib==3.7.1
 seaborn==0.12.2
 pandas==2.0.3
-
-# 可选：用于模型加载
-requests==2.31.0
