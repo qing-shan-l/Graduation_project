@@ -1,0 +1,90 @@
+{
+    "dumplings": {
+        "name_zh": "包子",
+        "calories_per_100g": 220,
+        "protein_per_100g": 8.5,
+        "fat_per_100g": 10.2,
+        "carbs_per_100g": 24.3,
+        "fiber_per_100g": 2.1,
+        "serving_size_g": 150,
+        "description": "传统中式主食，馅料多样，建议适量食用",
+        "health_tips": "可以选择蒸制方式，减少油脂摄入"
+    },
+    "french_fries": {
+        "name_zh": "薯条",
+        "calories_per_100g": 312,
+        "protein_per_100g": 3.4,
+        "fat_per_100g": 15.5,
+        "carbs_per_100g": 41.0,
+        "fiber_per_100g": 3.8,
+        "serving_size_g": 100,
+        "description": "高热量油炸食品，建议控制食用量",
+        "health_tips": "可以选择烤薯条代替油炸，减少脂肪摄入"
+    },
+    "fried_rice": {
+        "name_zh": "炒饭",
+        "calories_per_100g": 168,
+        "protein_per_100g": 5.1,
+        "fat_per_100g": 5.8,
+        "carbs_per_100g": 24.2,
+        "fiber_per_100g": 1.2,
+        "serving_size_g": 200,
+        "description": "主食类，建议搭配蔬菜食用",
+        "health_tips": "可以选择糙米或杂粮饭，增加膳食纤维"
+    },
+    "hamburger": {
+        "name_zh": "汉堡",
+        "calories_per_100g": 250,
+        "protein_per_100g": 12.0,
+        "fat_per_100g": 10.0,
+        "carbs_per_100g": 28.0,
+        "fiber_per_100g": 2.0,
+        "serving_size_g": 200,
+        "description": "快餐食品，建议选择全麦面包版本",
+        "health_tips": "可以选择鸡肉汉堡代替牛肉汉堡，脂肪含量较低"
+    },
+    "ice_cream": {
+        "name_zh": "冰淇淋",
+        "calories_per_100g": 207,
+        "protein_per_100g": 3.5,
+        "fat_per_100g": 11.0,
+        "carbs_per_100g": 23.6,
+        "fiber_per_100g": 0.7,
+        "serving_size_g": 100,
+        "description": "高糖甜品，建议适量食用",
+        "health_tips": "可以选择低糖或酸奶冰淇淋代替传统冰淇淋"
+    },
+    "peking_duck": {
+        "name_zh": "北京烤鸭",
+        "calories_per_100g": 337,
+        "protein_per_100g": 18.5,
+        "fat_per_100g": 28.0,
+        "carbs_per_100g": 3.5,
+        "fiber_per_100g": 0.5,
+        "serving_size_g": 150,
+        "description": "传统名菜，皮脆肉嫩，建议搭配薄饼和蔬菜",
+        "health_tips": "建议去除部分鸭皮，减少脂肪摄入"
+    },
+    "steak": {
+        "name_zh": "牛排",
+        "calories_per_100g": 271,
+        "protein_per_100g": 26.0,
+        "fat_per_100g": 19.0,
+        "carbs_per_100g": 0.0,
+        "fiber_per_100g": 0.0,
+        "serving_size_g": 200,
+        "description": "优质蛋白来源，建议选择瘦肉部分",
+        "health_tips": "可以选择烤或煎的方式，少用黄油"
+    },
+    "sushi": {
+        "name_zh": "寿司",
+        "calories_per_100g": 150,
+        "protein_per_100g": 6.0,
+        "fat_per_100g": 2.0,
+        "carbs_per_100g": 28.0,
+        "fiber_per_100g": 1.5,
+        "serving_size_g": 150,
+        "description": "日式传统美食，富含omega-3脂肪酸",
+        "health_tips": "可以选择糙米寿司，减少酱油用量"
+    }
+}
