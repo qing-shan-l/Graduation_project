@@ -15,6 +15,16 @@ matplotlib==3.10.8
 seaborn==0.13.2
 pandas==2.3.3
 
+# 网络请求相关
+requests==2.32.5
+urllib3==2.6.2
+certifi==2025.11.12
+idna==3.11
+
+# YOLOv5额外依赖
+psutil==7.2.1
+thop==0.1.1-2209072238
+
 # 使用与本地一致的PyTorch版本（带CUDA但Render会自动用CPU）
 torch==2.5.1
 torchvision==0.20.1
