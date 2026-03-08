@@ -20,62 +20,47 @@ class YOLOv5Detector:
         self.load_model()
 
     def load_model(self):
-        """加载YOLOv5模型"""
+        """加载YOLOv5模型 - 仅加载本地best.pt"""
         try:
             # 检查模型文件是否存在
             if not os.path.exists(MODEL_PATH):
                 logger.error(f"模型文件不存在: {MODEL_PATH}")
-                logger.info("将使用模拟模式进行测试")
-                self.use_mock = True
-                return
+                logger.info("请确保best.pt文件已放置在正确位置")
+                raise FileNotFoundError(f"模型文件不存在: {MODEL_PATH}")
 
             logger.info(f"正在加载模型从: {MODEL_PATH}")
             logger.info(f"使用设备: {self.device}")
-            self.use_mock = False
 
-            # 加载本地模型
+            # 加载本地模型 - 使用torch.hub.load的custom模式
             self.model = torch.hub.load('ultralytics/yolov5', 'custom',
-                                        path=MODEL_PATH, force_reload=True)
-            self.model.conf = MODEL_CONFIDENCE_THRESHOLD  # 置信度阈值
-            self.model.iou = 0.45  # IOU阈值
+                                        path=MODEL_PATH, force_reload=False)
+            self.model.conf = MODEL_CONFIDENCE_THRESHOLD
+            self.model.iou = 0.45
             self.model.to(self.device)
 
             logger.info("模型加载成功！")
             logger.info(f"模型类别数: {len(self.model.names)}")
 
-            # 过滤只保留支持的类别
-            self.filter_classes()
+            # 创建类别映射
+            for idx, name in self.model.names.items():
+                if name in SUPPORTED_CLASSES:
+                    self.class_mapping[idx] = name
+
+            logger.info(f"支持的类别: {list(self.class_mapping.values())}")
 
         except Exception as e:
             logger.error(f"模型加载失败: {e}")
-            logger.info("将使用模拟模式进行测试")
-            self.use_mock = True
-
-    def filter_classes(self):
-        """过滤只保留支持的8个类别"""
-        # 获取模型原始类别
-        original_names = self.model.names
-
-        # 创建类别映射
-        self.class_mapping = {}
-        for idx, name in original_names.items():
-            if name in SUPPORTED_CLASSES:
-                self.class_mapping[idx] = name
-
-        logger.info(f"支持的类别: {list(self.class_mapping.values())}")
+            raise e
 
     def preprocess_image(self, image):
         """预处理图像"""
         if isinstance(image, np.ndarray):
-            # 如果是OpenCV图像（BGR），转换为RGB
             if len(image.shape) == 3 and image.shape[2] == 3:
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = Image.fromarray(image)
         elif isinstance(image, bytes):
-            # 如果是字节数据
             image = Image.open(io.BytesIO(image))
         elif isinstance(image, str):
-            # 如果是文件路径
             image = Image.open(image)
 
         return image
@@ -83,11 +68,6 @@ class YOLOv5Detector:
     def detect(self, image):
         """执行目标检测"""
         try:
-            # 如果是模拟模式，返回模拟数据
-            if hasattr(self, 'use_mock') and self.use_mock:
-                logger.warning("使用模拟检测模式")
-                return self.mock_detect()
-
             # 预处理图像
             img = self.preprocess_image(image)
 
@@ -108,10 +88,10 @@ class YOLOv5Detector:
                             'class_id': cls,
                             'class_name': class_name,
                             'confidence': conf,
-                            'bbox': [float(x.item()) for x in box],  # [x1, y1, x2, y2]
+                            'bbox': [float(x.item()) for x in box],
                             'bbox_normalized': [
                                 float(x.item()) / img.size[0] if i % 2 == 0 else float(x.item()) / img.size[1]
-                                for i, x in enumerate(box)]  # 归一化坐标
+                                for i, x in enumerate(box)]
                         }
                         detections.append(detection)
                         logger.info(f"检测到: {class_name}, 置信度: {conf:.2f}")
@@ -125,23 +105,6 @@ class YOLOv5Detector:
         except Exception as e:
             logger.error(f"检测过程出错: {e}")
             return []
-
-    def mock_detect(self):
-        """模拟检测（用于测试）"""
-        import random
-        # 随机返回一个支持的食物类别
-        food_class = random.choice(SUPPORTED_CLASSES)
-        confidence = random.uniform(0.7, 0.95)
-
-        detection = {
-            'class_id': SUPPORTED_CLASSES.index(food_class),
-            'class_name': food_class,
-            'confidence': confidence,
-            'bbox': [100, 100, 300, 300],
-            'bbox_normalized': [0.2, 0.2, 0.6, 0.6]
-        }
-        logger.info(f"模拟检测: {food_class}, 置信度: {confidence:.2f}")
-        return [detection]
 
     def detect_batch(self, images):
         """批量检测"""
