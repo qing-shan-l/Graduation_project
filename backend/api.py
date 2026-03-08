@@ -48,6 +48,11 @@ advisor = None
 @app.on_event("startup")
 async def startup_event():
     logger.info("正在启动餐食识别服务...")
+
+    # 添加调试信息
+    import sys
+    logger.info(f"Python路径: {sys.path}")
+
     try:
         # 初始化检测器
         global detector, advisor
@@ -314,3 +319,4 @@ async def get_nutrition_advice(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host=HOST, port=PORT)
+
