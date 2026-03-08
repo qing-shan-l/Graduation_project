@@ -56,6 +56,7 @@ async def startup_event():
         logger.info("服务启动成功！")
     except Exception as e:
         logger.error(f"服务启动失败: {e}")
+        # Render会捕获异常并重启服务
         raise e
 
 
@@ -340,7 +341,5 @@ async def get_server_info():
     }
 
 
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host=HOST, port=PORT, reload=True)
+# 注意：Render会使用uvicorn直接运行，不需要__main__块
+# 这个文件将由uvicorn导入并运行
