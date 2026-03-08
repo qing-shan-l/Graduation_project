@@ -132,3 +132,4 @@ def get_detector():
     if detector is None:
         detector = YOLOv5Detector()
     return detector
+
